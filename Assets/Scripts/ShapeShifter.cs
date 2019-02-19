@@ -3,74 +3,52 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-using Direction = UnityEngine.Vector2Int;
-
-public class ShapeShifter : MonoBehaviour
+public enum ShiftStyle
 {
-    private enum ShiftStyle
-    {
-        Move,
-        Duplicate
-    }
+    None = 0,
+    Move,
+    Duplicate
+}
 
-    public GameObject blockPrefab;
-    public int width = 5;
-    public int height = 5;
-    public float shiftDuration = 0.25f;
-    public Vector3 maxScale = new Vector3(0.9f, 0.9f, 0.2f);
-    public Vector3 minScale = new Vector3(0.1f, 0.1f, 0.1f);
+public class ShapeShifter : BlockShape
+{
 
-    private bool shifting = false;
-    private float shiftTimer = 0f;
-    private Block[] blocks;
-    private bool[] currentShape;
-    private bool[] nextShape;
+    // public float shiftDuration = 0.25f;
+    // public Vector3 maxScale = new Vector3(0.9f, 0.9f, 0.2f);
+    // public Vector3 minScale = new Vector3(0.1f, 0.1f, 0.1f);
+    public delegate void OnShiftHandler();
+    public static event OnShiftHandler OnShift;
+
+    // private bool shifting = false;
+    // private float shiftTimer = 0f;
+
     private ShiftStyle shiftStyle = ShiftStyle.Move;
 
-    void Start()
+    private void OnEnable()
     {
-        Camera.main.transform.position = new Vector3((width - 1) / 2f, (height - 1) / 2f, -6f);
-        SetupBlocks();
-        currentShape = new bool[width * height];
-        currentShape[0] = true;
-        currentShape[1] = true;
-        SetBlocksToCurrentShape();
-
-        nextShape = new bool[width * height];
+        TouchController.OnSwipe += OnSwipe;
     }
 
-    private void SetBlocksToCurrentShape()
+    private void OnDisable()
     {
-        for (int i = 0; i < blocks.Length; ++i)
-        {
-            blocks[i].Active = currentShape[i];
-        }
+        TouchController.OnSwipe -= OnSwipe;
     }
 
-    void SetupBlocks()
+    private void OnSwipe(Direction direction, ShiftStyle style)
     {
-        blocks = new Block[width * height];
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                GameObject go = Instantiate(blockPrefab, new Vector3(x, y, 0f), Quaternion.identity);
-                Block block = go.GetComponent<Block>();
-                block.Position = new Vector2Int(x, y);
-                blocks[x + y * width] = block;
-            }
-        }
+        shiftStyle = style;
+        Shift(direction);
     }
 
     void Update()
     {
-        if (shifting)
-        {
-            UpdateShape();
-            return;
-        }
+        // if (shifting)
+        // {
+        //     UpdateShape();
+        //     return;
+        // }
 
-        if (Input.GetKey(KeyCode.Space))
+        if (Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.LeftShift))
         {
             shiftStyle = ShiftStyle.Duplicate;
         }
@@ -81,84 +59,71 @@ public class ShapeShifter : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.E))
         {
-            if (IsEmpty())
-            {
-                currentShape = EmptyToDirection(Directions.Up);
-            }
-            else
-            {
-                Shift(Directions.Up);
-            }
+            Shift(Direction.Up);
         }
 
         if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.F))
         {
-            if (IsEmpty())
-            {
-                currentShape = EmptyToDirection(Directions.Right);
-            }
-            else
-                Shift(Directions.Right);
+            Shift(Direction.Right);
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.S))
         {
-            Shift(Directions.Left);
+            Shift(Direction.Left);
         }
         if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.C))
         {
-            Shift(Directions.Down);
+            Shift(Direction.Down);
         }
         if (Input.GetKeyDown(KeyCode.R))
         {
-            Shift(Directions.UpRight);
+            Shift(Direction.UpRight);
         }
         if (Input.GetKeyDown(KeyCode.W))
         {
-            Shift(Directions.UpLeft);
+            Shift(Direction.UpLeft);
         }
         if (Input.GetKeyDown(KeyCode.V))
         {
-            Shift(Directions.DownRight);
+            Shift(Direction.DownRight);
         }
         if (Input.GetKeyDown(KeyCode.X))
         {
-            Shift(Directions.DownLeft);
+            Shift(Direction.DownLeft);
         }
 
-        if (Input.anyKeyDown && !Input.GetKeyDown(KeyCode.Space))
-        {
-            StartShifting();
-        }
+        // if (Input.anyKeyDown && !Input.GetKeyDown(KeyCode.Space))
+        // {
+        //     StartShifting();
+        // }
     }
 
-    private void StartShifting()
-    {
-        if (shifting)
-            return;
+    // private void StartShifting()
+    // {
+    //     if (shifting)
+    //         return;
 
-        for (int i = 0; i < nextShape.Length; ++i)
-        {
-            if (nextShape[i])
-                blocks[i].Active = true;
-        }
-        shifting = true;
-    }
+    //     for (int i = 0; i < nextShape.Length; ++i)
+    //     {
+    //         if (nextShape[i])
+    //             blocks[i].Active = true;
+    //     }
+    //     shifting = true;
+    // }
 
-    private void EndShifting()
-    {
-        shifting = false;
-        Array.Clear(currentShape, 0, currentShape.Length);
-        shiftTimer -= shiftDuration;
-        currentShape = nextShape;
-        SetBlocksToCurrentShape();
-
-        Array.Clear(nextShape, 0, nextShape.Length);
-    }
+    // private void EndShifting()
+    // {
+    //     shifting = false;
+    //     Array.Clear(currentShape, 0, currentShape.Length);
+    //     shiftTimer -= shiftDuration;
+    //     currentShape = nextShape;
+    //     SetBlocksToCurrentShape();
+    //     Array.Clear(nextShape, 0, nextShape.Length);
+    // }
 
     private bool[] EmptyToDirection(Direction direction)
     {
         bool[] state = new bool[width * height];
-        if (direction == Directions.Right)
+        if (direction == Direction.Right)
         {
             for (int y = 0; y < height; ++y)
             {
@@ -167,7 +132,7 @@ public class ShapeShifter : MonoBehaviour
             }
             state[PositionToIndex(new Vector2Int(1, height / 2))] = true;
         }
-        else if (direction == Directions.Up)
+        else if (direction == Direction.Up)
         {
             for (int x = 0; x < width; ++x)
             {
@@ -176,6 +141,24 @@ public class ShapeShifter : MonoBehaviour
             }
             state[PositionToIndex(new Vector2Int(width / 2, 1))] = true;
         }
+        else if (direction == Direction.Left)
+        {
+            for (int y = 0; y < height; ++y)
+            {
+                int index = PositionToIndex(new Vector2Int(width - 1, y));
+                state[index] = true;
+            }
+            state[PositionToIndex(new Vector2Int(width - 2, height / 2))] = true;
+        }
+        else if (direction == Direction.Down)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                int index = PositionToIndex(new Vector2Int(x, height - 1));
+                state[index] = true;
+            }
+            state[PositionToIndex(new Vector2Int(width / 2, height - 2))] = true;
+        }
         return state;
     }
 
@@ -183,42 +166,53 @@ public class ShapeShifter : MonoBehaviour
     {
         Array.Clear(nextShape, 0, nextShape.Length);
 
-        for (int i = 0; i < blocks.Length; ++i)
+        if (IsEmpty())
         {
-            if (blocks[i].Active)
-                ShiftBlock(blocks[i], direction);
+            nextShape = EmptyToDirection(direction);
         }
-    }
-
-    void UpdateShape()
-    {
-        float t = shiftTimer / shiftDuration;
-
-        for (int i = 0; i < blocks.Length; ++i)
-        {
-            if (currentShape[i])
-            {
-                if (!nextShape[i])
-                    blocks[i].transform.localScale = Vector3.Lerp(maxScale, minScale, t);
-                else
-                    blocks[i].transform.localScale = maxScale;
-            }
-            else if (nextShape[i])
-            {
-                blocks[i].transform.localScale = Vector3.Lerp(minScale, maxScale, t);
-            }
-        }
-
-
-        if (shiftTimer < shiftDuration)
-            shiftTimer += Time.deltaTime;
         else
         {
-            EndShifting();
+            for (int i = 0; i < blocks.Length; ++i)
+            {
+                if (blocks[i].Active)
+                    SetBlockToNext(blocks[i], direction);
+            }
         }
+
+        Array.Copy(nextShape, currentShape, width * height);
+        ShowCurrentShape();
+
+        if (OnShift != null)
+            OnShift();
     }
 
-    void ShiftBlock(Block block, Direction direction)
+    // void UpdateShape()
+    // {
+    //     float t = shiftTimer / shiftDuration;
+    //     for (int i = 0; i < blocks.Length; ++i)
+    //     {
+    //         if (currentShape[i])
+    //         {
+    //             if (!nextShape[i])
+    //                 blocks[i].transform.localScale = Vector3.Lerp(maxScale, minScale, t);
+    //             else
+    //                 blocks[i].transform.localScale = maxScale;
+    //         }
+    //         else if (nextShape[i])
+    //         {
+    //             blocks[i].transform.localScale = Vector3.Lerp(minScale, maxScale, t);
+    //         }
+    //     }
+
+    //     if (shiftTimer < shiftDuration)
+    //         shiftTimer += Time.deltaTime;
+    //     else
+    //     {
+    //         EndShifting();
+    //     }
+    // }
+
+    void SetBlockToNext(Block block, Direction direction)
     {
         int index = PositionToIndex(block.Position);
         if (nextShape[index] == false)
@@ -229,15 +223,16 @@ public class ShapeShifter : MonoBehaviour
                 nextShape[index] = true;
         }
 
-        int nextIndex = PositionToIndex(block.Position + direction);
+        Vector2Int directionVector = direction.ToVector2Int();
+        int nextIndex = PositionToIndex(block.Position + directionVector);
         if (nextIndex < 0)
         {
             if (shiftStyle == ShiftStyle.Duplicate)
             {
-                int x = (block.Position.x + direction.x) % width;
+                int x = (block.Position.x + directionVector.x) % width;
                 if (x < 0)
                     x = width + x;
-                int y = (block.Position.y + direction.y) % height;
+                int y = (block.Position.y + directionVector.y) % height;
                 if (y < 0)
                     y = width + y;
                 Vector2Int newPos = new Vector2Int(x, y);
@@ -246,39 +241,6 @@ public class ShapeShifter : MonoBehaviour
         }
         else
             nextShape[nextIndex] = true;
-    }
-
-    private bool IsEmpty()
-    {
-        for (int i = 0; i < currentShape.Length; ++i)
-            if (currentShape[i])
-                return false;
-        return true;
-    }
-
-    Block BlockInDirection(Block start, Direction direction)
-    {
-        return BlockAt(start.Position + direction);
-    }
-
-    public Block BlockAt(Vector2Int pos)
-    {
-        if (!IsInShape(pos))
-            return null;
-        return blocks[pos.x + pos.y * width];
-    }
-
-    public bool IsInShape(Vector2Int pos)
-    {
-        return (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height);
-    }
-
-    private int PositionToIndex(Vector2Int position)
-    {
-        if (!IsInShape(position))
-            return -1;
-
-        return Array.IndexOf(blocks, BlockAt(position));
     }
 
     private void OnDrawGizmos()
