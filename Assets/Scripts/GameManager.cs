@@ -4,24 +4,24 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public int width = 5;
-    public int height = 5;
     public float timeBetweenShapes = 10f;
 
+    private int matchedShapes = 0;
     private float timeToNextShape;
-    private int matchedShape = 0;
+    private State state;
+
     private GUIStyle style = new GUIStyle();
 
     public static GameManager Instance { get; private set; }
 
     void OnEnable()
     {
-        ShapeShifter.OnShift += CheckMatch;
+        ShapeShifter.OnShift += IsMatching;
     }
 
     private void OnDisable()
     {
-        ShapeShifter.OnShift -= CheckMatch;
+        ShapeShifter.OnShift -= IsMatching;
     }
 
     private void Awake()
@@ -34,8 +34,22 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        Camera.main.transform.position = new Vector3((width - 1) / 2f, (height - 1) / 2f, -10f);
         timeToNextShape = timeBetweenShapes;
+        Camera.main.transform.position = new Vector3(
+            (LevelManager.width - 1) / 2f,
+            (LevelManager.height - 1) / 2f, -10f);
+
+        // initialize map
+        state = LevelManager.Instance.GetState();
+        for (int i = 0; i < State.Size; ++i)
+        {
+            Debug.LogFormat("{0}, {1}", state.cellStates[i], State.IndexToPosition(i));
+        }
+    }
+
+    private void NextState()
+    {
+
     }
 
     private void Update()
@@ -47,8 +61,8 @@ public class GameManager : MonoBehaviour
             {
                 // lose game
             }
+
             timeToNextShape += timeBetweenShapes;
-            // do wall stuff
         }
         else
         {
@@ -57,27 +71,10 @@ public class GameManager : MonoBehaviour
         TouchController.Update();
     }
 
-    private void CheckMatch()
-    {
-        if (IsMatching())
-        {
-            Debug.Log("match");
-            // next shape to match
-        }
-        else
-            Debug.Log("no match");
-    }
-
     private bool IsMatching()
     {
         return false;
-
-        // for shapeshifter blocks
-            // for obstacle blocks
-                // if active and active
-                    // true
-        // false
-
+        // return myShape == playerShape
     }
 
     void OnGUI()

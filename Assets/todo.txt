@@ -1,5 +1,6 @@
 todo:
+    reimplement player controls
+    think about name for State/CellState
     gameplay
-    think about class organization for player and shapes to match (maybe level/map class or something)
     keep updating end position while holding
     show potential move while holding
