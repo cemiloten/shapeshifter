@@ -16,8 +16,8 @@ public static class TouchController
     {
         get
         {
-            // 10% of smallest screen border
-            return 0.1f * Mathf.Min(Screen.width, Screen.height);
+            // 5% of smallest screen border
+            return 0.05f * Mathf.Min(Screen.width, Screen.height);
         }
     }
 
@@ -25,7 +25,7 @@ public static class TouchController
     {
 #if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
         if (Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.LeftShift))
-            shiftStyle = ShiftStyle.Duplicate;
+            shiftStyle = ShiftStyle.Grow;
         else
             shiftStyle = ShiftStyle.Move;
 
@@ -38,8 +38,8 @@ public static class TouchController
         {
             touchEnd = Input.mousePosition;
             Direction direction = DirectionMethods.ToDirection(touchEnd - touchOrigin);
-            OnSwipe(direction, shiftStyle);
-            Debug.Log(direction);
+            if (OnSwipe != null && direction != Direction.None)
+                OnSwipe(direction, shiftStyle);
         }
 #else
         if (Input.touchCount > 0)
@@ -60,9 +60,7 @@ public static class TouchController
 
                 Direction dir = DirectionMethods.ToDirection(swipe);
                 if (OnSwipe != null && dir != Direction.None)
-                {
                     OnSwipe(dir, shiftStyle);
-                }
             }
         }
 #endif

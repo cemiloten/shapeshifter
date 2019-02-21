@@ -5,6 +5,8 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public float timeBetweenShapes = 10f;
+    public ShapeShifter shifter;
+    public ShapeShifter targetShifter;
 
     private int matchedShapes = 0;
     private float timeToNextShape;
@@ -14,14 +16,14 @@ public class GameManager : MonoBehaviour
 
     public static GameManager Instance { get; private set; }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        ShapeShifter.OnShift += IsMatching;
+        shifter.OnShift += OnShift;
     }
 
     private void OnDisable()
     {
-        ShapeShifter.OnShift -= IsMatching;
+        shifter.OnShift -= OnShift;
     }
 
     private void Awake()
@@ -40,41 +42,67 @@ public class GameManager : MonoBehaviour
             (LevelManager.height - 1) / 2f, -10f);
 
         // initialize map
-        state = LevelManager.Instance.GetState();
-        for (int i = 0; i < State.Size; ++i)
-        {
-            Debug.LogFormat("{0}, {1}", state.cellStates[i], State.IndexToPosition(i));
-        }
-    }
-
-    private void NextState()
-    {
-
+        GetNewTarget();
     }
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Debug.LogFormat("current state:\n{0}", state);
+        }
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            Debug.LogFormat("current shifter state:\n{0}", shifter.State);
+        }
+        if (Input.GetKeyDown(KeyCode.Backspace))
+        {
+            GetNewTarget();
+            Debug.LogFormat("generated new state:\n{0}", state);
+        }
         timeToNextShape -= Time.deltaTime;
         if (timeToNextShape <= 0f)
         {
-            if (IsMatching() == false)
+            if (!IsMatch())
             {
                 // lose game
             }
 
             timeToNextShape += timeBetweenShapes;
         }
-        else
-        {
-        }
 
         TouchController.Update();
     }
 
-    private bool IsMatching()
+    private void OnShift()
     {
-        return false;
-        // return myShape == playerShape
+        if (IsMatch())
+        {
+            Debug.Log("match");
+            GetNewTarget();
+            Debug.LogFormat("new state: \n{0}", state);
+        }
+        else
+            Debug.Log("no match");
+    }
+
+    private bool IsMatch()
+    {
+        if (shifter == null)
+        {
+            return false;
+        }
+        if (state == null)
+        {
+            return false;
+        }
+        return state.Equals(shifter.State);
+    }
+
+    private void GetNewTarget()
+    {
+        state = LevelManager.Instance.GenerateState();
+        targetShifter.State = state;
     }
 
     void OnGUI()

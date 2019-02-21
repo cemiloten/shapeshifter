@@ -10,12 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea0b446281b7c534cae73ff22833c219, type: 3}
-  m_Name: Cube
+  m_Name: X
   m_EditorClassIdentifier: 
-  width: 2
-  height: 2
+  width: 3
+  height: 3
   positions:
   - {x: 0, y: 0}
-  - {x: 1, y: 0}
-  - {x: 0, y: 1}
+  - {x: 2, y: 0}
   - {x: 1, y: 1}
+  - {x: 0, y: 2}
+  - {x: 2, y: 2}

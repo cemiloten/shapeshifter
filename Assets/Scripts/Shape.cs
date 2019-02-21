@@ -4,16 +4,9 @@ using System.Collections.Generic;
 [CreateAssetMenu(fileName = "Shape", menuName = "ShapeShifter/Shape")]
 public class Shape : ScriptableObject
 {
+    public int width;
+    public int height;
     public Vector2Int[] positions;
-
-    // private Vector2Int GetMin()
-    // {
-    //     Vector2Int min = positions[0];
-    //     for (int i = 0; i < positions.Length; ++i)
-    //     {
-    //         if (positions[i] < m
-    //     }
-    // }
 
     public static bool Equals(Shape s1, Shape s2)
     {

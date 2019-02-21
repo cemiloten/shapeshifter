@@ -1,6 +1,5 @@
 todo:
-    reimplement swipe to shapeshifter action
+    gaemplay
     think about name for State/CellState
-    gameplay
     keep updating end position while holding
     show potential move while holding

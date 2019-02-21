@@ -16,7 +16,6 @@ public enum Direction
 
 public static class DirectionMethods
 {
-
     public static readonly Dictionary<Direction, Vector2> DirectionToVector2 = new Dictionary<Direction, Vector2>()
     {
         { Direction.Right,     new Vector2( 1f,  0f) },
@@ -30,7 +29,7 @@ public static class DirectionMethods
 
     };
 
-    public static readonly Dictionary<Direction, Vector2Int> DirectionToVector2Int = new Dictionary<Direction, Vector2Int>()
+    private static readonly Dictionary<Direction, Vector2Int> DirectionToVector2Int = new Dictionary<Direction, Vector2Int>()
     {
         { Direction.Right,     new Vector2Int( 1,  0) },
         { Direction.Up,        new Vector2Int( 0,  1) },
@@ -41,6 +40,11 @@ public static class DirectionMethods
         { Direction.DownRight, new Vector2Int( 1, -1) },
         { Direction.DownLeft,  new Vector2Int(-1, -1) },
     };
+
+    public static Vector2Int ToVector2Int(Direction dir)
+    {
+        return DirectionToVector2Int[dir];
+    }
 
     public static Direction ToDirection(Vector2 vector)
     {

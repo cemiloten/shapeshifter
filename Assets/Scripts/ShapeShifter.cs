@@ -7,19 +7,20 @@ public enum ShiftStyle
 {
     None = 0,
     Move,
-    Duplicate
+    Grow
 }
 
 public class ShapeShifter : MonoBehaviour
 {
     public GameObject blockPrefab;
+    public bool register = true;
 
     // public float shiftDuration = 0.25f;
     // public Vector3 maxScale = new Vector3(0.9f, 0.9f, 0.2f);
     // public Vector3 minScale = new Vector3(0.1f, 0.1f, 0.1f);
 
-    public delegate bool OnShiftHandler();
-    public static event OnShiftHandler OnShift;
+    public delegate void OnShiftHandler();
+    public event OnShiftHandler OnShift;
 
     private State currState;
     private State nextState;
@@ -30,28 +31,46 @@ public class ShapeShifter : MonoBehaviour
 
     private ShiftStyle shiftStyle = ShiftStyle.Move;
 
+    public State State
+    {
+        get => currState;
+        set
+        {
+            currState = value;
+            ShowCurrentState();
+        }
+    }
+
     private void OnEnable()
     {
-        TouchController.OnSwipe += OnSwipe;
+        if (register)
+            TouchController.OnSwipe += OnSwipe;
     }
 
     private void OnDisable()
     {
-        TouchController.OnSwipe -= OnSwipe;
+        if (register)
+            TouchController.OnSwipe -= OnSwipe;
     }
 
     private void OnSwipe(Direction direction, ShiftStyle style)
     {
         shiftStyle = style;
-        // Shift(direction);
+        Shift(direction);
+
+        if (OnShift != null)
+        {
+            OnShift();
+        }
     }
 
     private void Start()
     {
         currState = new State();
         nextState = new State();
+        currState[12] = CellState.Active;
         PrepareBlocks();
-        UpdateBlocks();
+        ShowCurrentState();
     }
 
     private void PrepareBlocks()
@@ -67,17 +86,6 @@ public class ShapeShifter : MonoBehaviour
                 block.Position = new Vector2Int(x, y);
                 blocks[x + y * LevelManager.width] = block;
             }
-        }
-    }
-
-    private void UpdateBlocks()
-    {
-        for (int i = 0; i < blocks.Length; ++i)
-        {
-            if (currState[i] == CellState.Active)
-                blocks[i].Active = true;
-            else
-                blocks[i].Active = false;
         }
     }
 
@@ -119,71 +127,81 @@ public class ShapeShifter : MonoBehaviour
     //     Array.Clear(nextShape, 0, nextShape.Length);
     // }
 
-    // private bool[] EmptyToDirection(Direction direction)
-    // {
-    //     bool[] state = new bool[LevelManager.width * LevelManager.height];
-    //     if (direction == Direction.Right)
-    //     {
-    //         for (int y = 0; y < LevelManager.height; ++y)
-    //         {
-    //             int index = PositionToIndex(new Vector2Int(0, y));
-    //             state[index] = true;
-    //         }
-    //         state[PositionToIndex(new Vector2Int(1, LevelManager.height / 2))] = true;
-    //     }
-    //     else if (direction == Direction.Up)
-    //     {
-    //         for (int x = 0; x < LevelManager.width; ++x)
-    //         {
-    //             int index = PositionToIndex(new Vector2Int(x, 0));
-    //             state[index] = true;
-    //         }
-    //         state[PositionToIndex(new Vector2Int(LevelManager.width / 2, 1))] = true;
-    //     }
-    //     else if (direction == Direction.Left)
-    //     {
-    //         for (int y = 0; y < LevelManager.height; ++y)
-    //         {
-    //             int index = PositionToIndex(new Vector2Int(LevelManager.width - 1, y));
-    //             state[index] = true;
-    //         }
-    //         state[PositionToIndex(new Vector2Int(LevelManager.width - 2, LevelManager.height / 2))] = true;
-    //     }
-    //     else if (direction == Direction.Down)
-    //     {
-    //         for (int x = 0; x < LevelManager.width; ++x)
-    //         {
-    //             int index = PositionToIndex(new Vector2Int(x, LevelManager.height - 1));
-    //             state[index] = true;
-    //         }
-    //         state[PositionToIndex(new Vector2Int(LevelManager.width / 2, LevelManager.height - 2))] = true;
-    //     }
-    //     return state;
-    // }
+    private State EmptyToDirection(Direction direction)
+    {
+        State state = new State();
+        if (direction == Direction.Right)
+        {
+            for (int y = 0; y < LevelManager.height; ++y)
+            {
+                int index = State.PositionToIndex(new Vector2Int(0, y));
+                state[index]  = CellState.Active;
+            }
+            state[State.PositionToIndex(new Vector2Int(1, LevelManager.height / 2))]  = CellState.Active;
+        }
+        else if (direction == Direction.Up)
+        {
+            for (int x = 0; x < LevelManager.width; ++x)
+            {
+                int index = State.PositionToIndex(new Vector2Int(x, 0));
+                state[index]  = CellState.Active;
+            }
+            state[State.PositionToIndex(new Vector2Int(LevelManager.width / 2, 1))]  = CellState.Active;
+        }
+        else if (direction == Direction.Left)
+        {
+            for (int y = 0; y < LevelManager.height; ++y)
+            {
+                int index = State.PositionToIndex(new Vector2Int(LevelManager.width - 1, y));
+                state[index]  = CellState.Active;
+            }
+            state[State.PositionToIndex(new Vector2Int(LevelManager.width - 2, LevelManager.height / 2))]  = CellState.Active;
+        }
+        else if (direction == Direction.Down)
+        {
+            for (int x = 0; x < LevelManager.width; ++x)
+            {
+                int index = State.PositionToIndex(new Vector2Int(x, LevelManager.height - 1));
+                state[index]  = CellState.Active;
+            }
+            state[State.PositionToIndex(new Vector2Int(LevelManager.width / 2, LevelManager.height - 2))]  = CellState.Active;
+        }
+        return state;
+    }
 
-    // void Shift(Direction direction)
-    // {
-    //     Array.Clear(nextShape, 0, nextShape.Length);
+    void Shift(Direction direction)
+    {
+        nextState.Reset();
 
-    //     if (IsEmpty())
-    //     {
-    //         nextShape = EmptyToDirection(direction);
-    //     }
-    //     else
-    //     {
-    //         for (int i = 0; i < blocks.Length; ++i)
-    //         {
-    //             if (blocks[i].Active)
-    //                 SetBlockToNext(blocks[i], direction);
-    //         }
-    //     }
+        if (currState.IsEmpty())
+        {
+            nextState = EmptyToDirection(direction);
+        }
+        else
+        {
+            for (int i = 0; i < State.Size; ++i)
+            {
+                if (currState[i] == CellState.Active)
+                    SetCellStateToNext(i, direction);
+            }
+        }
+        currState = new State(nextState);
+        ShowCurrentState();
 
-    //     Array.Copy(nextShape, currentShape, LevelManager.width * LevelManager.height);
-    //     ShowCurrentShape();
+        if (OnShift != null)
+            OnShift();
+    }
 
-    //     if (OnShift != null)
-    //         OnShift();
-    // }
+    private void ShowCurrentState()
+    {
+        for (int i = 0; i < State.Size; ++i)
+        {
+            if (currState[i] == CellState.Active)
+                blocks[i].gameObject.SetActive(true);
+            else if (currState[i] == CellState.Inactive)
+                blocks[i].gameObject.SetActive(false);
+        }
+    }
 
     // void UpdateShape()
     // {
@@ -211,56 +229,35 @@ public class ShapeShifter : MonoBehaviour
     //     }
     // }
 
-    // void SetBlockToNext(Block block, Direction direction)
-    // {
-    //     int index = PositionToIndex(block.Position);
-    //     if (nextShape[index] == false)
-    //     {
-    //         if (shiftStyle == ShiftStyle.Move)
-    //             nextShape[index] = false;
-    //         else if (shiftStyle == ShiftStyle.Duplicate)
-    //             nextShape[index] = true;
-    //     }
-
-    //     Vector2Int directionVector = direction.ToVector2Int();
-    //     int nextIndex = PositionToIndex(block.Position + directionVector);
-    //     if (nextIndex < 0)
-    //     {
-    //         if (shiftStyle == ShiftStyle.Duplicate)
-    //         {
-    //             int x = (block.Position.x + directionVector.x) % LevelManager.width;
-    //             if (x < 0)
-    //                 x = LevelManager.width + x;
-    //             int y = (block.Position.y + directionVector.y) % LevelManager.height;
-    //             if (y < 0)
-    //                 y = LevelManager.width + y;
-    //             Vector2Int newPos = new Vector2Int(x, y);
-    //             nextShape[PositionToIndex(newPos)] = true;
-    //         }
-    //     }
-    //     else
-    //         nextShape[nextIndex] = true;
-    // }
-
-    private void OnDrawGizmos()
+    void SetCellStateToNext(int currIndex, Direction direction)
     {
-        Vector3 widthLine = Vector3.right * LevelManager.width;
-        Vector3 heightLine = Vector3.up * LevelManager.height;
-
-        for (int z = 0; z <= LevelManager.height; ++z)
+        if (nextState[currIndex] == CellState.Inactive)
         {
-            Vector3 start = Vector3.up * z;
-            start.x -= 0.5f;
-            start.y -= 0.5f;
-            Debug.DrawLine(start, start + widthLine, Color.black);
+            if (shiftStyle == ShiftStyle.Move)
+                nextState[currIndex] = CellState.Inactive;
+            else if (shiftStyle == ShiftStyle.Grow)
+                nextState[currIndex] = CellState.Active;
+        }
 
-            for (int x = 0; x <= LevelManager.width; ++x)
+        Vector2Int currPosition = State.IndexToPosition(currIndex);
+        Vector2Int directionVector = DirectionMethods.ToVector2Int(direction);
+        int nextIndex = State.PositionToIndex(currPosition + directionVector);
+        if (nextIndex < 0)
+        {
+            if (shiftStyle == ShiftStyle.Grow)
             {
-                start = Vector3.right * x;
-                start.x -= 0.5f;
-                start.y -= 0.5f;
-                Debug.DrawLine(start, start + heightLine, Color.black);
+                int x = (currPosition.x + directionVector.x) % LevelManager.width;
+                if (x < 0)
+                    x = LevelManager.width + x;
+                int y = (currPosition.y + directionVector.y) % LevelManager.height;
+                if (y < 0)
+                    y = LevelManager.width + y;
+                Vector2Int newPos = new Vector2Int(x, y);
+                nextState[State.PositionToIndex(newPos)] = CellState.Active;
             }
         }
+        else
+            nextState[nextIndex] = CellState.Active;
     }
+
 }
