@@ -1,5 +1,5 @@
 todo:
-    reimplement player controls
+    reimplement swipe to shapeshifter action
     think about name for State/CellState
     gameplay
     keep updating end position while holding

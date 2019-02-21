@@ -29,38 +29,17 @@ public static class TouchController
         else
             shiftStyle = ShiftStyle.Move;
 
-        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.E))
+        if (Input.GetMouseButtonDown(0))
         {
-            OnSwipe(Direction.Up, shiftStyle);
+            touchOrigin = Input.mousePosition;
         }
 
-        if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.F))
+        if (Input.GetMouseButtonUp(0))
         {
-            OnSwipe(Direction.Right, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.S))
-        {
-            OnSwipe(Direction.Left, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.C))
-        {
-            OnSwipe(Direction.Down, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            OnSwipe(Direction.UpRight, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.W))
-        {
-            OnSwipe(Direction.UpLeft, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            OnSwipe(Direction.DownRight, shiftStyle);
-        }
-        if (Input.GetKeyDown(KeyCode.X))
-        {
-            OnSwipe(Direction.DownLeft, shiftStyle);
+            touchEnd = Input.mousePosition;
+            Direction direction = DirectionMethods.ToDirection(touchEnd - touchOrigin);
+            OnSwipe(direction, shiftStyle);
+            Debug.Log(direction);
         }
 #else
         if (Input.touchCount > 0)
@@ -75,31 +54,11 @@ public static class TouchController
             else if (shift.phase == TouchPhase.Ended)
             {
                 touchEnd = shift.position;
-                Vector2 swipe = new Vector2(touchEnd.x - touchOrigin.x, touchEnd.y - touchOrigin.y);
+                Vector2 swipe = new Vector2(touchEnd - touchOrigin);
                 if (swipe.magnitude < SwipeDistance)
                     return;
-                Direction[] directions = System.Enum.GetValues(typeof(Direction)) as Direction[];
-                Vector2[] directionVectors = new Vector2[directions.Length];
-                for (int i = 0; i < directions.Length; ++i)
-                {
-                    directionVectors[i] = directions[i].ToVector2();
-                }
 
-                Direction dir = Direction.None;
-                float dot = 0f;
-                for (int i = 0; i < directions.Length; ++i)
-                {
-                    float d = Vector2.Dot(swipe.normalized, directionVectors[i]);
-                    if (d > dot)
-                    {
-                        dot = d;
-                        dir = directions[i];
-                    }
-
-                    if (dot > 0.95f)
-                        break;
-                }
-
+                Direction dir = DirectionMethods.ToDirection(swipe);
                 if (OnSwipe != null && dir != Direction.None)
                 {
                     OnSwipe(dir, shiftStyle);
