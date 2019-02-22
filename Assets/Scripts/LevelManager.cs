@@ -52,27 +52,4 @@ public class LevelManager : MonoBehaviour
         }
         return state;
     }
-
-    private void DrawGrid()
-    {
-        Vector3 widthLine = Vector3.right * LevelManager.width;
-        Vector3 heightLine = Vector3.up * LevelManager.height;
-
-        for (int z = 0; z <= LevelManager.height; ++z)
-        {
-            Vector3 start = Vector3.up * z;
-            start.x -= 0.5f;
-            start.y -= 0.5f;
-            Debug.DrawLine(start, start + widthLine, Color.black);
-
-
-            for (int x = 0; x <= LevelManager.width; ++x)
-            {
-                start = Vector3.right * x;
-                start.x -= 0.5f;
-                start.y -= 0.5f;
-                Debug.DrawLine(start, start + heightLine, Color.black);
-            }
-        }
-    }
 }

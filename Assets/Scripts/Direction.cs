@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,9 +42,11 @@ public static class DirectionMethods
         { Direction.DownLeft,  new Vector2Int(-1, -1) },
     };
 
-    public static Vector2Int ToVector2Int(Direction dir)
+    public static Vector2Int ToVector2Int(Direction direction)
     {
-        return DirectionToVector2Int[dir];
+        if (direction == Direction.None)
+            throw new ArgumentException("[direction] cannot be Direction.None");
+        return DirectionToVector2Int[direction];
     }
 
     public static Direction ToDirection(Vector2 vector)
@@ -58,9 +61,6 @@ public static class DirectionMethods
                 dot = d;
                 result = dirToVector2.Key;
             }
-
-            if (dot > 0.95f)
-                break;
         }
 
         return result;

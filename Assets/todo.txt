@@ -1,5 +1,7 @@
 todo:
-    gaemplay
-    think about name for State/CellState
-    keep updating end position while holding
-    show potential move while holding
+    find a good way of handling touch controls with events and shapeshifter reaction
+
+    fix direction stuff
+    update potential state if shift style changes
+    dont show potential state if no direction
+    gameplay

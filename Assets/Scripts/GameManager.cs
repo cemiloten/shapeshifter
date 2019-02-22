@@ -80,10 +80,7 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("match");
             GetNewTarget();
-            Debug.LogFormat("new state: \n{0}", state);
         }
-        else
-            Debug.Log("no match");
     }
 
     private bool IsMatch()
@@ -109,7 +106,8 @@ public class GameManager : MonoBehaviour
     {
         style.fontSize = 36;
         GUILayout.BeginArea(new Rect(20, 20, 800, 200));
-        GUILayout.Label(string.Format("Time until next wall: {0:0.#}", timeToNextShape), style);
+        GUILayout.Label(string.Format("Time until next target: {0:0.#}", timeToNextShape), style);
+        GUILayout.Label(string.Format("Style: {0}", shifter.Style), style);
         GUILayout.EndArea();
     }
 }

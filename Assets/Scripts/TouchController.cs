@@ -5,64 +5,43 @@ using UnityEngine;
 
 public static class TouchController
 {
-    public delegate void OnSwipeHandler(Direction direction, ShiftStyle style);
-    public static event OnSwipeHandler OnSwipe;
+    public delegate void OnTouchCountChangedHandler();
+    public static event OnTouchCountChangedHandler OnTouchCountChanged;
 
-    private static Vector2 touchOrigin;
-    private static Vector2 touchEnd;
-    private static Touch shift;
-    private static ShiftStyle shiftStyle = ShiftStyle.None;
-    private static float SwipeDistance
-    {
-        get
-        {
-            // 5% of smallest screen border
-            return 0.05f * Mathf.Min(Screen.width, Screen.height);
-        }
-    }
+    public delegate void OnStartTouchHandler(Touch touch);
+    public static event OnStartTouchHandler OnStartTouch;
+
+    public delegate void OnEndTouchHandler(Touch touch);
+    public static event OnEndTouchHandler OnEndTouch;
+
+    public static int TouchCount { get; private set; }
 
     public static void Update()
     {
-#if UNITY_EDITOR || UNITY_STANDALONE || UNITY_WEBPLAYER
-        if (Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.LeftShift))
-            shiftStyle = ShiftStyle.Grow;
-        else
-            shiftStyle = ShiftStyle.Move;
-
-        if (Input.GetMouseButtonDown(0))
+        if (Input.touchCount != TouchCount && OnTouchCountChanged != null)
         {
-            touchOrigin = Input.mousePosition;
+            TouchCount = Input.touchCount;
+            OnTouchCountChanged();
         }
 
-        if (Input.GetMouseButtonUp(0))
-        {
-            touchEnd = Input.mousePosition;
-            Direction direction = DirectionMethods.ToDirection(touchEnd - touchOrigin);
-            if (OnSwipe != null && direction != Direction.None)
-                OnSwipe(direction, shiftStyle);
-        }
-#else
+    // TOUCHES ARE PASSED BY VALUE EVERYTHING IS WRONG
+    // TOUCHES ARE PASSED BY VALUE EVERYTHING IS WRONG
+    // TOUCHES ARE PASSED BY VALUE EVERYTHING IS WRONG
+    // TOUCHES ARE PASSED BY VALUE EVERYTHING IS WRONG
         if (Input.touchCount > 0)
         {
-            shift = Input.GetTouch(0);
-            shiftStyle = Input.touchCount > 1 ? ShiftStyle.Grow : ShiftStyle.Move;
-
-            if (shift.phase == TouchPhase.Began)
+            for (int i = 0; i < Input.touches.Length; ++i)
             {
-                touchOrigin = shift.position;
-            }
-            else if (shift.phase == TouchPhase.Ended)
-            {
-                touchEnd = shift.position;
-                Vector2 swipe = touchEnd - touchOrigin;
-                if (swipe.magnitude < SwipeDistance)
-                    return;
-
-                Direction dir = DirectionMethods.ToDirection(swipe);
-                if (OnSwipe != null && dir != Direction.None)
-                    OnSwipe(dir, shiftStyle);
+                Touch touch = Input.touches[i];
+                if (touch.phase == TouchPhase.Began && OnStartTouch != null)
+                {
+                    OnStartTouch(touch);
+                }
+                else if (touch.phase == TouchPhase.Ended && OnEndTouch != null)
+                {
+                    OnEndTouch(touch);
+                }
             }
         }
-#endif
     }
 }

@@ -81,11 +81,6 @@ public class State
         State other = (State)obj;
         for (int i = 0; i < Size; ++i)
         {
-            if (i < 5)
-            {
-                Debug.Log(cellStates[i]);
-                Debug.Log(other[i]);
-            }
             if (other[i] != cellStates[i])
             {
                 return false;
