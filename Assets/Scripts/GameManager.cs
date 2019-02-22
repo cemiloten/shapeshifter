@@ -39,7 +39,7 @@ public class GameManager : MonoBehaviour
         timeToNextShape = timeBetweenShapes;
         Camera.main.transform.position = new Vector3(
             (LevelManager.width - 1) / 2f,
-            (LevelManager.height - 1) / 2f, -10f);
+            (LevelManager.height - 1) / 2f, -9f);
 
         // initialize map
         GetNewTarget();
@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
         return state.Equals(shifter.State);
     }
 
-    private void GetNewTarget()
+    public void GetNewTarget()
     {
         state = LevelManager.Instance.GenerateState();
         targetShifter.State = state;

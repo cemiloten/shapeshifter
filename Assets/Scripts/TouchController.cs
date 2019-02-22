@@ -45,7 +45,7 @@ public static class TouchController
         if (Input.touchCount > 0)
         {
             shift = Input.GetTouch(0);
-            shiftStyle = Input.touchCount > 1 ? ShiftStyle.Duplicate : ShiftStyle.Move;
+            shiftStyle = Input.touchCount > 1 ? ShiftStyle.Grow : ShiftStyle.Move;
 
             if (shift.phase == TouchPhase.Began)
             {
@@ -54,7 +54,7 @@ public static class TouchController
             else if (shift.phase == TouchPhase.Ended)
             {
                 touchEnd = shift.position;
-                Vector2 swipe = new Vector2(touchEnd - touchOrigin);
+                Vector2 swipe = touchEnd - touchOrigin;
                 if (swipe.magnitude < SwipeDistance)
                     return;
 
