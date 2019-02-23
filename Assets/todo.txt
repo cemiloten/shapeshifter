@@ -1,7 +1,3 @@
 todo:
-    find a good way of handling touch controls with events and shapeshifter reaction
-
+    fix touch input
     fix direction stuff
-    update potential state if shift style changes
-    dont show potential state if no direction
-    gameplay

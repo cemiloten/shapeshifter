@@ -5,8 +5,8 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public float timeBetweenShapes = 10f;
-    public ShapeShifter shifter;
-    public ShapeShifter targetShifter;
+    public Shifter shifter;
+    public Shifter targetShifter;
 
     private int matchedShapes = 0;
     private float timeToNextShape;
@@ -37,9 +37,9 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         timeToNextShape = timeBetweenShapes;
-        Camera.main.transform.position = new Vector3(
-            (LevelManager.width - 1) / 2f,
-            (LevelManager.height - 1) / 2f, -9f);
+        // Camera.main.transform.position = new Vector3(
+        //     (LevelManager.width - 1) / 2f,
+        //     (LevelManager.height - 1) / 2f, -9f);
 
         // initialize map
         GetNewTarget();
@@ -71,7 +71,7 @@ public class GameManager : MonoBehaviour
             timeToNextShape += timeBetweenShapes;
         }
 
-        TouchController.Update();
+        TouchManager.Update();
     }
 
     private void OnShift()
