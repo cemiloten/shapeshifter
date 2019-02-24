@@ -78,7 +78,6 @@ public class GameManager : MonoBehaviour
     {
         if (IsMatch())
         {
-            Debug.Log("match");
             GetNewTarget();
         }
     }

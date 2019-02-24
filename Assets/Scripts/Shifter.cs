@@ -27,8 +27,8 @@ public class Shifter : MonoBehaviour
 
     private Vector2 touchStart;
     private Vector2 potentialTouchEnd;
-    private float minTimeBetweenSwipes = 0.5f;
-    private float timeSinceLastSwipe = 0f;
+    private float minTimeBetweenTouches = 0.25f;
+    private float timeSinceTouchEnd = 0f;
 
     public ShiftStyle Style { get => shiftStyle; }
 
@@ -109,33 +109,33 @@ public class Shifter : MonoBehaviour
             shiftStyle = ShiftStyle.None;
         }
 
-        if (shiftStyle != ShiftStyle.None)
-        {
-            Vector2 pSwipe = potentialTouchEnd - touchStart;
-            Direction direction = Direction.None;
-            if (pSwipe.magnitude > MinSwipeDistance)
-                direction = DirectionMethods.ToDirection(pSwipe);
-            State pState = CalculateNextState(direction);
-            ShowPotentialState(pState);
-        }
+        // if (shiftStyle != ShiftStyle.None)
+        // {
+        //     Vector2 pSwipe = potentialTouchEnd - touchStart;
+        //     Direction direction = Direction.None;
+        //     if (pSwipe.magnitude > MinSwipeDistance)
+        //         direction = DirectionMethods.ToDirection(pSwipe);
+        //     State pState = CalculateNextState(direction);
+        //     ShowPotentialState(pState);
+        // }
     }
 
     private void OnStartTouch(Vector2 startPosition)
     {
-        if (TouchManager.TouchCount == 0
-            && timeSinceLastSwipe < minTimeBetweenSwipes)
-        {
+        if (timeSinceTouchEnd < minTimeBetweenTouches)
             return;
-        }
 
+        touchStartSprite.transform.position = startPosition;
         touchStart = startPosition;
-        touchStartSprite.transform.position = touchStart;
     }
 
     private void OnMoveTouch(Vector2 newPosition)
     {
+        if (timeSinceTouchEnd < minTimeBetweenTouches)
+            return;
+
+        potentialTouchEndSprite.transform.position = newPosition;
         potentialTouchEnd = newPosition;
-        potentialTouchEndSprite.transform.position = potentialTouchEnd;
         Vector2 pSwipe = potentialTouchEnd - touchStart;
 
         Direction direction = Direction.None;
@@ -147,32 +147,22 @@ public class Shifter : MonoBehaviour
 
     private void OnEndTouch(Vector2 endPosition)
     {
+        if (timeSinceTouchEnd < minTimeBetweenTouches)
+            return;
         Vector2 swipe = endPosition - touchStart;
-        Direction direction;
-        if (TouchManager.TouchCount <= 2
-            && swipe.magnitude > MinSwipeDistance
-            && timeSinceLastSwipe > minTimeBetweenSwipes)
+        Direction direction = Direction.None;
+        if (swipe.magnitude > MinSwipeDistance)
         {
             direction = DirectionMethods.ToDirection(swipe);
             Shift(direction);
-            timeSinceLastSwipe = 0f;
-            // touchStartSprite.gameObject.SetActive(false);
-            // potentialTouchEndSprite.gameObject.SetActive(false);
+            timeSinceTouchEnd = 0f;
         }
     }
 
     private void Update()
     {
-        timeSinceLastSwipe += Time.deltaTime;
-        // Vector3 start = Camera.main.ScreenToWorldPoint(touchStart);
-        // Vector3 pEnd = Camera.main.ScreenToWorldPoint(potentialTouchEnd);
-        // Debug.DrawLine(start, pEnd, Color.red);
+        timeSinceTouchEnd += Time.deltaTime;
     }
-
-    // private void OnSwipe(Direction direction, ShiftStyle style)
-    // {
-    //     shiftStyle = style;
-    // }
 
     private State EmptyToDirection(Direction direction)
     {
@@ -253,8 +243,9 @@ public class Shifter : MonoBehaviour
         {
             if (state[i] == CellState.Active)
             {
-                blocks[i].Color = Color.white;
                 blocks[i].Active = true;
+                if (registered)
+                    blocks[i].Color = Color.white;
             }
             else if (state[i] == CellState.Inactive)
                 blocks[i].Active = false;
