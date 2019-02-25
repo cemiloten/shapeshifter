@@ -25,9 +25,24 @@ public class Shifter : MonoBehaviour
     private Block[] blocks;
     private ShiftStyle shiftStyle = ShiftStyle.Move;
 
-    private Vector2 touchStart;
+    private struct TouchInfo
+    {
+        public int ID;
+        public Vector2 position;
+        public Vector2 startPosition;
+
+        public TouchInfo(int ID, Vector2 position, Vector2 startPosition)
+        {
+            this.ID = ID;
+            this.position = position;
+            this.startPosition = startPosition;
+        }
+    }
+
+    private List<TouchInfo> touchInfos = new List<TouchInfo>();
     private Vector2 potentialTouchEnd;
-    private float minTimeBetweenTouches = 0.25f;
+
+    private float minTimeBetweenTouches = 0.2f;
     private float timeSinceTouchEnd = 0f;
 
     public ShiftStyle Style { get => shiftStyle; }
@@ -51,8 +66,8 @@ public class Shifter : MonoBehaviour
     {
         if (registered)
         {
-            TouchManager.OnTouchCountChanged += OnTouchCountChanged;
             TouchManager.OnStartTouch += OnStartTouch;
+            TouchManager.OnHoldTouch += OnHoldTouch;
             TouchManager.OnMoveTouch += OnMoveTouch;
             TouchManager.OnEndTouch += OnEndTouch;
         }
@@ -62,8 +77,8 @@ public class Shifter : MonoBehaviour
     {
         if (registered)
         {
-            TouchManager.OnTouchCountChanged -= OnTouchCountChanged;
             TouchManager.OnStartTouch -= OnStartTouch;
+            TouchManager.OnHoldTouch -= OnHoldTouch;
             TouchManager.OnMoveTouch -= OnMoveTouch;
             TouchManager.OnEndTouch -= OnEndTouch;
         }
@@ -94,50 +109,48 @@ public class Shifter : MonoBehaviour
         }
     }
 
-    private void OnTouchCountChanged()
+    private void UpdateShiftStyle(int count)
     {
-        if (TouchManager.TouchCount == 1)
-        {
+        if (count == 1)
             shiftStyle = ShiftStyle.Move;
-        }
-        else if (TouchManager.TouchCount > 1)
-        {
+        else if (count == 2)
             shiftStyle = ShiftStyle.Grow;
-        }
         else
-        {
             shiftStyle = ShiftStyle.None;
-        }
-
-        // if (shiftStyle != ShiftStyle.None)
-        // {
-        //     Vector2 pSwipe = potentialTouchEnd - touchStart;
-        //     Direction direction = Direction.None;
-        //     if (pSwipe.magnitude > MinSwipeDistance)
-        //         direction = DirectionMethods.ToDirection(pSwipe);
-        //     State pState = CalculateNextState(direction);
-        //     ShowPotentialState(pState);
-        // }
     }
 
-    private void OnStartTouch(Vector2 startPosition)
+    private void OnStartTouch(int fingerID, Vector2 startPosition)
     {
-        if (timeSinceTouchEnd < minTimeBetweenTouches)
+        if (touchInfos.Count > 1)
             return;
 
-        touchStartSprite.transform.position = startPosition;
-        touchStart = startPosition;
+        if (touchInfos.Count == 0)
+            touchStartSprite.transform.position = startPosition;
+
+        touchInfos.Add(new TouchInfo(fingerID, startPosition, startPosition));
+        UpdateShiftStyle(touchInfos.Count);
     }
 
-    private void OnMoveTouch(Vector2 newPosition)
+    private void OnHoldTouch(int fingerID, Vector2 position)
     {
-        if (timeSinceTouchEnd < minTimeBetweenTouches)
+        if (fingerID != touchInfos[0].ID)
+        {
+            potentialTouchEndSprite.transform.position = position;
+        }
+    }
+
+    private void OnMoveTouch(int fingerID, Vector2 newPosition)
+    {
+        if (fingerID != touchInfos[0].ID)
             return;
 
         potentialTouchEndSprite.transform.position = newPosition;
-        potentialTouchEnd = newPosition;
-        Vector2 pSwipe = potentialTouchEnd - touchStart;
 
+        TouchInfo touchInfo = touchInfos[0];
+        touchInfo.position = newPosition;
+        touchInfos[0] = touchInfo;
+
+        Vector2 pSwipe = newPosition - touchInfo.startPosition;
         Direction direction = Direction.None;
         if (pSwipe.magnitude > MinSwipeDistance)
             direction = DirectionMethods.ToDirection(pSwipe);
@@ -145,18 +158,43 @@ public class Shifter : MonoBehaviour
         ShowPotentialState(pState);
     }
 
-    private void OnEndTouch(Vector2 endPosition)
+    private void OnEndTouch(int fingerID, Vector2 endPosition)
     {
-        if (timeSinceTouchEnd < minTimeBetweenTouches)
-            return;
-        Vector2 swipe = endPosition - touchStart;
-        Direction direction = Direction.None;
-        if (swipe.magnitude > MinSwipeDistance)
+        TouchInfo to = new TouchInfo();
+        bool found = false;
+
+        for (int i = 0; i < touchInfos.Count; ++i)
         {
-            direction = DirectionMethods.ToDirection(swipe);
-            Shift(direction);
-            timeSinceTouchEnd = 0f;
+            if (touchInfos[i].ID != fingerID)
+                continue;
+            to = touchInfos[i];
+            found = true;
+            touchInfos.RemoveAt(i);
+            break;
         }
+
+        if (found)
+        {
+            if (timeSinceTouchEnd < minTimeBetweenTouches)
+                shiftStyle = ShiftStyle.Grow;
+            else
+                shiftStyle = ShiftStyle.Move;
+
+            timeSinceTouchEnd = 0f;
+
+            if (touchInfos.Count != 0)
+                return;
+
+            Vector2 swipe = endPosition - to.startPosition;
+            Direction direction = Direction.None;
+            if (swipe.magnitude > MinSwipeDistance)
+            {
+                direction = DirectionMethods.ToDirection(swipe);
+                Shift(direction);
+            }
+        }
+
+        UpdateShiftStyle(touchInfos.Count);
     }
 
     private void Update()
@@ -316,19 +354,5 @@ public class Shifter : MonoBehaviour
         }
         else
             state[nextIndex] = CellState.Active;
-    }
-
-    private void OnDrawGizmos()
-    {
-        // if (touchInfos.Count > 0)
-        // {
-        //     Vector3 a = Camera.main.ScreenToWorldPoint(touchInfos[0].startPosition);
-        //     Vector3 b = Camera.main.ScreenToWorldPoint(potentialTouchEnd);
-        //     a.z = -3f;
-        //     b.z = -3f;
-        //     Debug.Log(a);
-        //     Debug.Log(b);
-        //     Debug.DrawLine(a, b);
-        // }
     }
 }
