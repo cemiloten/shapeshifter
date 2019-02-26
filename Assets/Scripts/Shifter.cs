@@ -12,19 +12,6 @@ public enum ShiftStyle
 
 public class Shifter : MonoBehaviour
 {
-    public GameObject blockPrefab;
-    public GameObject touchStartSprite;
-    public GameObject potentialTouchEndSprite;
-    public bool registered = true;
-
-    public delegate void OnShiftHandler();
-    public event OnShiftHandler OnShift;
-
-    private State currState;
-    private State nextState;
-    private Block[] blocks;
-    private ShiftStyle shiftStyle = ShiftStyle.Move;
-
     private struct TouchInfo
     {
         public int ID;
@@ -39,11 +26,26 @@ public class Shifter : MonoBehaviour
         }
     }
 
-    private List<TouchInfo> touchInfos = new List<TouchInfo>();
-    private Vector2 potentialTouchEnd;
+    public GameObject blockPrefab;
+    public GameObject touchStartSprite;
+    public GameObject potentialSwipeEndSprite;
+    public bool registered = true;
 
-    private float minTimeBetweenTouches = 0.2f;
-    private float timeSinceTouchEnd = 0f;
+    public delegate void OnShiftHandler();
+    public event OnShiftHandler OnShift;
+
+    private const float minTimeBetweenTouches = 0.2f;
+    private const int maxTouchCount = 2;
+
+    public float timeSinceTouchEnd = 0f; // change to private when not needed anymore
+
+    private State currState;
+    private State nextState;
+    private Block[] blocks;
+    private ShiftStyle shiftStyle = ShiftStyle.Move;
+    private List<TouchInfo> touchInfos = new List<TouchInfo>();
+    private Vector2 _swipeStart;
+    private Vector2 _swipeEnd;
 
     public ShiftStyle Style { get => shiftStyle; }
 
@@ -59,17 +61,39 @@ public class Shifter : MonoBehaviour
 
     private float MinSwipeDistance
     {
-        get => 0.05f * Mathf.Min(Screen.width, Screen.height);
+        get => 0.10f * Mathf.Min(Screen.width, Screen.height);
+    }
+
+    private int TouchCount => touchInfos.Count;
+
+    private Vector2 SwipeStart
+    {
+        get => _swipeStart;
+        set
+        {
+            _swipeStart = value;
+            touchStartSprite.transform.position = value;
+        }
+    }
+
+    private Vector2 SwipeEnd
+    {
+        get => _swipeEnd;
+        set
+        {
+            _swipeEnd = value;
+            potentialSwipeEndSprite.transform.position = value;
+        }
     }
 
     private void OnEnable()
     {
         if (registered)
         {
-            TouchManager.OnStartTouch += OnStartTouch;
-            TouchManager.OnHoldTouch += OnHoldTouch;
-            TouchManager.OnMoveTouch += OnMoveTouch;
-            TouchManager.OnEndTouch += OnEndTouch;
+            TouchManager.OnTouchStart += OnStartTouch;
+            TouchManager.OnTouchHold += OnHoldTouch;
+            TouchManager.OnTouchMove += OnMoveTouch;
+            TouchManager.OnTouchEnd += OnEndTouch;
         }
     }
 
@@ -77,10 +101,10 @@ public class Shifter : MonoBehaviour
     {
         if (registered)
         {
-            TouchManager.OnStartTouch -= OnStartTouch;
-            TouchManager.OnHoldTouch -= OnHoldTouch;
-            TouchManager.OnMoveTouch -= OnMoveTouch;
-            TouchManager.OnEndTouch -= OnEndTouch;
+            TouchManager.OnTouchStart -= OnStartTouch;
+            TouchManager.OnTouchHold -= OnHoldTouch;
+            TouchManager.OnTouchMove -= OnMoveTouch;
+            TouchManager.OnTouchEnd -= OnEndTouch;
         }
     }
 
@@ -121,85 +145,91 @@ public class Shifter : MonoBehaviour
 
     private void OnStartTouch(int fingerID, Vector2 startPosition)
     {
-        if (touchInfos.Count > 1)
+        if (TouchCount >= maxTouchCount)
             return;
 
-        if (touchInfos.Count == 0)
-            touchStartSprite.transform.position = startPosition;
+        Vector2 pos = Camera.main.ScreenToWorldPoint(startPosition);
 
-        touchInfos.Add(new TouchInfo(fingerID, startPosition, startPosition));
-        UpdateShiftStyle(touchInfos.Count);
+        if (TouchCount == 0)
+            SwipeStart = pos;
+
+        touchInfos.Add(new TouchInfo(fingerID, pos, pos));
+        UpdateShiftStyle(TouchCount);
     }
 
     private void OnHoldTouch(int fingerID, Vector2 position)
     {
-        if (fingerID != touchInfos[0].ID)
+        if (TouchCount == 1)
         {
-            potentialTouchEndSprite.transform.position = position;
+            SwipeStart = touchInfos[0].startPosition;
         }
     }
 
     private void OnMoveTouch(int fingerID, Vector2 newPosition)
     {
-        if (fingerID != touchInfos[0].ID)
+        int index;
+        if (!GetTouchInfoIndex(fingerID, out index))
+            return; // Ignore touch if not recorded.
+
+        Vector2 pos = Camera.main.ScreenToWorldPoint(newPosition);
+
+        // Update touch's current position
+        TouchInfo touchInfo = touchInfos[index];
+        touchInfo.position = pos;
+        touchInfos[index] = touchInfo;
+
+        if (index != 0)
             return;
 
-        potentialTouchEndSprite.transform.position = newPosition;
-
-        TouchInfo touchInfo = touchInfos[0];
-        touchInfo.position = newPosition;
-        touchInfos[0] = touchInfo;
-
-        Vector2 pSwipe = newPosition - touchInfo.startPosition;
-        Direction direction = Direction.None;
-        if (pSwipe.magnitude > MinSwipeDistance)
-            direction = DirectionMethods.ToDirection(pSwipe);
-        State pState = CalculateNextState(direction);
+        Vector2 pSwipe = pos - touchInfo.startPosition;
+        State pState = CalculateNextState(pSwipe);
         ShowPotentialState(pState);
+        SwipeEnd = pos;
     }
 
     private void OnEndTouch(int fingerID, Vector2 endPosition)
     {
-        TouchInfo to = new TouchInfo();
-        bool found = false;
+        int index;
+        if (!GetTouchInfoIndex(fingerID, out index))
+            return; // Ignore touch if not recorded.
 
-        for (int i = 0; i < touchInfos.Count; ++i)
+        touchInfos.RemoveAt(index);
+        timeSinceTouchEnd = 0f;
+        UpdateShiftStyle(TouchCount);
+
+        if (TouchCount == 1)
         {
-            if (touchInfos[i].ID != fingerID)
-                continue;
-            to = touchInfos[i];
-            found = true;
-            touchInfos.RemoveAt(i);
-            break;
+            return;
         }
 
-        if (found)
-        {
-            if (timeSinceTouchEnd < minTimeBetweenTouches)
-                shiftStyle = ShiftStyle.Grow;
-            else
-                shiftStyle = ShiftStyle.Move;
+        // If we released a finger slighlty before, consider that it was a two finger swipe.
+        if (timeSinceTouchEnd < minTimeBetweenTouches)
+            shiftStyle = ShiftStyle.Grow;
 
-            timeSinceTouchEnd = 0f;
-
-            if (touchInfos.Count != 0)
-                return;
-
-            Vector2 swipe = endPosition - to.startPosition;
-            Direction direction = Direction.None;
-            if (swipe.magnitude > MinSwipeDistance)
-            {
-                direction = DirectionMethods.ToDirection(swipe);
-                Shift(direction);
-            }
-        }
-
-        UpdateShiftStyle(touchInfos.Count);
+        Shift(SwipeEnd - SwipeStart);
     }
 
     private void Update()
     {
+        if (!registered)
+            return;
+
         timeSinceTouchEnd += Time.deltaTime;
+    }
+
+    private bool GetTouchInfoIndex(int fingerID, out int index)
+    {
+        for (int i = 0; i < TouchCount; ++i)
+        {
+            if (touchInfos[i].ID == fingerID)
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
     }
 
     private State EmptyToDirection(Direction direction)
@@ -244,18 +274,27 @@ public class Shifter : MonoBehaviour
         return state;
     }
 
-    void Shift(Direction direction)
+    void Shift(Vector2 swipe)
     {
+        State state = CalculateNextState(swipe);
+        if (state == currState)
+            return;
+
         nextState.Reset();
-        currState = CalculateNextState(direction);
+        currState = state;
         ShowState(currState);
 
         if (OnShift != null)
             OnShift();
     }
 
-    private State CalculateNextState(Direction direction)
+
+    private State CalculateNextState(Vector2 swipe, int distance = 0)
     {
+        Direction direction = Direction.None;
+        if (swipe.magnitude > MinSwipeDistance)
+            direction = DirectionMethods.ToDirection(swipe);
+
         if (direction == Direction.None)
             return currState;
 

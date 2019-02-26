@@ -8,17 +8,20 @@ public static class TouchManager
     public delegate void OnTouchCountChangedHandler();
     public static event OnTouchCountChangedHandler OnTouchCountChanged;
 
-    public delegate void OnStartTouchHandler(int fingerdID, Vector2 startPosition);
-    public static event OnStartTouchHandler OnStartTouch;
+    public delegate void OnTouchStartHandler(int fingerdID, Vector2 startPosition);
+    public static event OnTouchStartHandler OnTouchStart;
 
-    public delegate void OnHoldTouchHandler(int fingerdID, Vector2 newPosition);
-    public static event OnHoldTouchHandler OnHoldTouch;
+    public delegate void OnTouchHoldHandler(int fingerdID, Vector2 newPosition);
+    public static event OnTouchHoldHandler OnTouchHold;
 
-    public delegate void OnMoveTouchHandler(int fingerdID, Vector2 newPosition);
-    public static event OnMoveTouchHandler OnMoveTouch;
+    public delegate void OnTouchMoveHandler(int fingerdID, Vector2 newPosition);
+    public static event OnTouchMoveHandler OnTouchMove;
 
-    public delegate void OnEndTouchHandler(int fingerdID, Vector2 endPosition);
-    public static event OnEndTouchHandler OnEndTouch;
+    public delegate void OnTouchEndHandler(int fingerdID, Vector2 endPosition);
+    public static event OnTouchEndHandler OnTouchEnd;
+
+    public delegate void OnTouchCancelHandler(int fingerdID, Vector2 endPosition);
+    public static event OnTouchCancelHandler OnTouchCancel;
 
     public static int TouchCount { get; private set; }
 
@@ -35,21 +38,25 @@ public static class TouchManager
             for (int i = 0; i < Input.touchCount; ++i)
             {
                 Touch touch = Input.touches[i];
-                if (touch.phase == TouchPhase.Began && OnStartTouch != null)
+                if (touch.phase == TouchPhase.Began && OnTouchStart != null)
                 {
-                    OnStartTouch(touch.fingerId, touch.position);
+                    OnTouchStart(touch.fingerId, touch.position);
                 }
-                else if (touch.phase == TouchPhase.Stationary && OnHoldTouch != null)
+                else if (touch.phase == TouchPhase.Stationary && OnTouchHold != null)
                 {
-                    OnHoldTouch(touch.fingerId, touch.position);
+                    OnTouchHold(touch.fingerId, touch.position);
                 }
-                else if (touch.phase == TouchPhase.Moved && OnMoveTouch != null)
+                else if (touch.phase == TouchPhase.Moved && OnTouchMove != null)
                 {
-                    OnMoveTouch(touch.fingerId, touch.position);
+                    OnTouchMove(touch.fingerId, touch.position);
                 }
-                else if (touch.phase == TouchPhase.Ended && OnEndTouch != null)
+                else if (touch.phase == TouchPhase.Ended && OnTouchEnd != null)
                 {
-                    OnEndTouch(touch.fingerId, touch.position);
+                    OnTouchEnd(touch.fingerId, touch.position);
+                }
+                else if (touch.phase == TouchPhase.Canceled && OnTouchCancel != null)
+                {
+                    OnTouchCancel(touch.fingerId, touch.position);
                 }
             }
         }

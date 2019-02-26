@@ -1,3 +1,6 @@
 todo:
-    fix touch input
-    fix direction stuff
+    translate gestures into world units
+    swipe by distance (recursion)
+
+known bugs:
+    swipe with one finger without releasing, add finger, release two fingers at the same time, should validate shift
