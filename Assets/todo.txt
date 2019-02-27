@@ -1,5 +1,5 @@
 todo:
-    translate gestures into world units
+    calculate screen unit for one swipe
     swipe by distance (recursion)
 
 known bugs:

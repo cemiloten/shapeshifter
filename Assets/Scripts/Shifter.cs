@@ -148,12 +148,10 @@ public class Shifter : MonoBehaviour
         if (TouchCount >= maxTouchCount)
             return;
 
-        Vector2 pos = Camera.main.ScreenToWorldPoint(startPosition);
-
         if (TouchCount == 0)
-            SwipeStart = pos;
+            SwipeStart = startPosition;
 
-        touchInfos.Add(new TouchInfo(fingerID, pos, pos));
+        touchInfos.Add(new TouchInfo(fingerID, startPosition, startPosition));
         UpdateShiftStyle(TouchCount);
     }
 
@@ -171,20 +169,18 @@ public class Shifter : MonoBehaviour
         if (!GetTouchInfoIndex(fingerID, out index))
             return; // Ignore touch if not recorded.
 
-        Vector2 pos = Camera.main.ScreenToWorldPoint(newPosition);
-
         // Update touch's current position
         TouchInfo touchInfo = touchInfos[index];
-        touchInfo.position = pos;
+        touchInfo.position = newPosition;
         touchInfos[index] = touchInfo;
 
         if (index != 0)
             return;
 
-        Vector2 pSwipe = pos - touchInfo.startPosition;
-        State pState = CalculateNextState(pSwipe);
+        Vector2 pSwipe = newPosition - touchInfo.startPosition;
+        State pState = CalculateState(pSwipe);
         ShowPotentialState(pState);
-        SwipeEnd = pos;
+        SwipeEnd = newPosition;
     }
 
     private void OnEndTouch(int fingerID, Vector2 endPosition)
@@ -194,11 +190,11 @@ public class Shifter : MonoBehaviour
             return; // Ignore touch if not recorded.
 
         touchInfos.RemoveAt(index);
-        timeSinceTouchEnd = 0f;
         UpdateShiftStyle(TouchCount);
 
         if (TouchCount == 1)
         {
+            timeSinceTouchEnd = 0f;
             return;
         }
 
@@ -207,6 +203,7 @@ public class Shifter : MonoBehaviour
             shiftStyle = ShiftStyle.Grow;
 
         Shift(SwipeEnd - SwipeStart);
+        timeSinceTouchEnd = 0f;
     }
 
     private void Update()
@@ -276,7 +273,7 @@ public class Shifter : MonoBehaviour
 
     void Shift(Vector2 swipe)
     {
-        State state = CalculateNextState(swipe);
+        State state = CalculateState(swipe);
         if (state == currState)
             return;
 
@@ -289,7 +286,7 @@ public class Shifter : MonoBehaviour
     }
 
 
-    private State CalculateNextState(Vector2 swipe, int distance = 0)
+    private State CalculateState(Vector2 swipe)
     {
         Direction direction = Direction.None;
         if (swipe.magnitude > MinSwipeDistance)
@@ -298,20 +295,38 @@ public class Shifter : MonoBehaviour
         if (direction == Direction.None)
             return currState;
 
-        State state = new State();
-        if (currState.IsEmpty())
+        // get number of steps from swipe length
+        int steps = 0;
+        float mag = swipe.magnitude;
+        while (mag > MinSwipeDistance)
         {
-            state = EmptyToDirection(direction);
+            mag -= MinSwipeDistance;
+            ++steps;
         }
-        else
+
+        // recursively calculate all states
+        State state = new State(currState);
+        for (int i = 0; i < steps; ++i)
         {
-            for (int i = 0; i < State.Size; ++i)
-            {
-                if (currState[i] == CellState.Active)
-                    SetCellStateToNext(state, i, direction);
-            }
+            state = CalculateNewState(state, direction);
         }
         return state;
+    }
+
+    private State CalculateNewState(State from, Direction direction)
+    {
+        State result = new State();
+        if (from.IsEmpty())
+        {
+            return EmptyToDirection(direction);
+        }
+
+        for (int i = 0; i < State.Size; ++i)
+        {
+            if (from[i] == CellState.Active)
+                SetCellStateToNext(result, i, direction);
+        }
+        return result;
     }
 
     private void ShowState(State state)

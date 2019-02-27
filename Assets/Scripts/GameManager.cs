@@ -37,10 +37,6 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         timeToNextShape = timeBetweenShapes;
-        // Camera.main.transform.position = new Vector3(
-        //     (LevelManager.width - 1) / 2f,
-        //     (LevelManager.height - 1) / 2f, -9f);
-
         // initialize map
         GetNewTarget();
     }
