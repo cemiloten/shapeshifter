@@ -43,8 +43,8 @@ public class LevelManager : MonoBehaviour
     {
         State state = new State();
         Vector2Int startPosition = new Vector2Int(
-            Random.Range(0, LevelManager.width - shape.width),
-            Random.Range(0, LevelManager.height - shape.height));
+            Random.Range(0, LevelManager.width + 1 - shape.width),
+            Random.Range(0, LevelManager.height + 1 - shape.height));
         for (int i = 0; i < shape.positions.Length; ++i)
         {
             int index = State.PositionToIndex(startPosition + shape.positions[i]);

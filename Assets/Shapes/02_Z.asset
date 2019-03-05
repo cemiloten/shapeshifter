@@ -10,11 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea0b446281b7c534cae73ff22833c219, type: 3}
-  m_Name: VerticalBar
+  m_Name: 02_Z
   m_EditorClassIdentifier: 
-  width: 1
-  height: 3
+  width: 3
+  height: 2
   positions:
-  - {x: 0, y: 0}
   - {x: 0, y: 1}
-  - {x: 0, y: 2}
+  - {x: 1, y: 1}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}

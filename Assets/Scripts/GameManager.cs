@@ -1,18 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
+    public Text timeText;
+    public Text scoreText;
+
     public float timeBetweenShapes = 10f;
     public Shifter shifter;
     public Shifter targetShifter;
 
-    private int matchedShapes = 0;
+    private int score = 0;
     private float timeToNextShape;
     private State state;
-
-    private GUIStyle style = new GUIStyle();
 
     public static GameManager Instance { get; private set; }
 
@@ -37,25 +39,31 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         timeToNextShape = timeBetweenShapes;
+
         // initialize map
         GetNewTarget();
+        UpdateScoreText();
+        UpdateTimeText();
+    }
+
+    private void UpdateScoreText()
+    {
+        scoreText.text = score.ToString();
+    }
+
+    private void UpdateTimeText()
+    {
+        timeText.text = timeToNextShape.ToString("0.00");
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Debug.LogFormat("current state:\n{0}", state);
-        }
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            Debug.LogFormat("current shifter state:\n{0}", shifter.State);
-        }
-        if (Input.GetKeyDown(KeyCode.Backspace))
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
             GetNewTarget();
             Debug.LogFormat("generated new state:\n{0}", state);
         }
+
         timeToNextShape -= Time.deltaTime;
         if (timeToNextShape <= 0f)
         {
@@ -67,6 +75,7 @@ public class GameManager : MonoBehaviour
             timeToNextShape += timeBetweenShapes;
         }
 
+        UpdateTimeText();
         TouchManager.Update();
     }
 
@@ -74,7 +83,9 @@ public class GameManager : MonoBehaviour
     {
         if (IsMatch())
         {
+            ++score;
             GetNewTarget();
+            UpdateScoreText();
         }
     }
 
@@ -99,10 +110,5 @@ public class GameManager : MonoBehaviour
 
     void OnGUI()
     {
-        style.fontSize = 36;
-        GUILayout.BeginArea(new Rect(20, 20, 800, 200));
-        GUILayout.Label(string.Format("Time until next target: {0:0.#}", timeToNextShape), style);
-        GUILayout.Label(string.Format("Style: {0}", shifter.Style), style);
-        GUILayout.EndArea();
     }
 }
