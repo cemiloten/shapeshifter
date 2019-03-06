@@ -70,15 +70,13 @@ public class State
         return true;
     }
 
-    public override bool Equals(object obj)
+    public bool Equals(State other)
     {
-        if (obj == null || GetType() != obj.GetType())
+        if (other == null)
         {
-            Debug.Log("no same type");
             return false;
         }
 
-        State other = (State)obj;
         for (int i = 0; i < Size; ++i)
         {
             if (other[i] != cellStates[i])
@@ -88,6 +86,15 @@ public class State
         }
         return true;
     }
+
+    public override bool Equals(object obj)
+    {
+        if (obj == null)
+            return false;
+        return obj as State == null ? false : Equals(obj);
+    }
+
+    public override int GetHashCode() { return base.GetHashCode(); }
 
     public static bool operator ==(State state1, State state2)
     {
@@ -103,11 +110,6 @@ public class State
             return !object.Equals(state1, state2);
 
         return !(state1.Equals(state2));
-    }
-
-    public override int GetHashCode()
-    {
-        return base.GetHashCode();
     }
 
     public override string ToString()

@@ -27,8 +27,6 @@ public class Shifter : MonoBehaviour
     }
 
     public GameObject blockPrefab;
-    public GameObject touchStartSprite;
-    public GameObject potentialSwipeEndSprite;
     public bool registered = true;
 
     public delegate void OnShiftHandler();
@@ -72,7 +70,7 @@ public class Shifter : MonoBehaviour
         set
         {
             _swipeStart = value;
-            touchStartSprite.transform.position = value;
+            GameManager.Instance.swipeStartSprite.transform.position = value;
         }
     }
 
@@ -82,7 +80,7 @@ public class Shifter : MonoBehaviour
         set
         {
             _swipeEnd = value;
-            potentialSwipeEndSprite.transform.position = value;
+            GameManager.Instance.potentialSwipeEndSprite.transform.position = value;
         }
     }
 
@@ -108,7 +106,7 @@ public class Shifter : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void Awake()
     {
         currState = new State();
         nextState = new State();
