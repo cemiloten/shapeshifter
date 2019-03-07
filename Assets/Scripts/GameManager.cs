@@ -4,6 +4,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+public enum SceneBuildIndex
+{
+    StartMenu = 0,
+    Game      = 1,
+    EndMenu   = 2
+}
+
 public class GameManager : MonoBehaviour
 {
     public Text timeText;
@@ -70,21 +77,21 @@ public class GameManager : MonoBehaviour
 
     public static void InitializeGame()
     {
-        SceneManager.LoadScene("Game");
+        SceneManager.LoadScene((int)SceneBuildIndex.Game);
     }
 
     private void LoseGame()
     {
         if (shifter != null)
             shifter.OnShift -= OnShift;
-        SceneManager.LoadScene("EndGame");
+        SceneManager.LoadScene((int)SceneBuildIndex.EndMenu);
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         Debug.LogFormat("loaded {0}", scene.name);
 
-        if (scene.name == "Game")
+        if (scene.buildIndex == (int)SceneBuildIndex.Game)
         {
             Instantiate(levelManager);
             shifter = Instantiate(shifterPrefab).GetComponent<Shifter>() as Shifter;
@@ -99,7 +106,7 @@ public class GameManager : MonoBehaviour
             UpdateScoreText();
             UpdateTimeText();
         }
-        else if (scene.name == "EndGame")
+        else if (scene.buildIndex == (int)SceneBuildIndex.EndMenu)
         {
             UpdateScoreText();
             UpdateTotalTimeText();
@@ -133,7 +140,7 @@ public class GameManager : MonoBehaviour
             Debug.LogFormat("generated new state:\n{0}", state);
         }
 
-        if (SceneManager.GetActiveScene().name == "Game")
+        if (SceneManager.GetActiveScene().buildIndex == (int)SceneBuildIndex.Game)
         {
             timeToNextShape -= Time.deltaTime;
             totalTime += Time.deltaTime;
