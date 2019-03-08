@@ -12,38 +12,23 @@ public enum ShiftStyle
 
 public class Shifter : MonoBehaviour
 {
-    private struct TouchInfo
-    {
-        public int ID;
-        public Vector2 position;
-        public Vector2 startPosition;
-
-        public TouchInfo(int ID, Vector2 position, Vector2 startPosition)
-        {
-            this.ID = ID;
-            this.position = position;
-            this.startPosition = startPosition;
-        }
-    }
-
-    public GameObject blockPrefab;
-    public bool registered = true;
-
-    public delegate void OnShiftHandler();
-    public event OnShiftHandler OnShift;
-
     private const float minTimeBetweenTouches = 0.2f;
     private const int maxTouchCount = 2;
 
+    public GameObject blockPrefab;
+    public bool registered = true;
     public float timeSinceTouchEnd = 0f; // change to private when not needed anymore
+
+    public delegate void OnShiftHandler();
+    public event OnShiftHandler OnShift;
 
     private State currState;
     private State nextState;
     private Block[] blocks;
     private ShiftStyle shiftStyle = ShiftStyle.Move;
-    private List<TouchInfo> touchInfos = new List<TouchInfo>();
     private Vector2 _swipeStart;
     private Vector2 _swipeEnd;
+    private TouchInfo touchInfo;
 
     public ShiftStyle Style { get => shiftStyle; }
 
@@ -61,8 +46,6 @@ public class Shifter : MonoBehaviour
     {
         get => 0.10f * Mathf.Min(Screen.width, Screen.height);
     }
-
-    private int TouchCount => touchInfos.Count;
 
     private Vector2 SwipeStart
     {
@@ -88,10 +71,10 @@ public class Shifter : MonoBehaviour
     {
         if (registered)
         {
-            TouchManager.OnTouchStart += OnStartTouch;
-            TouchManager.OnTouchHold += OnHoldTouch;
-            TouchManager.OnTouchMove += OnMoveTouch;
-            TouchManager.OnTouchEnd += OnEndTouch;
+            TouchManager.OnTouchStart += OnTouchStart;
+            TouchManager.OnTouchHold += OnTouchHold;
+            TouchManager.OnTouchMove += OnTouchMove;
+            TouchManager.OnTouchEnd += OnTouchEnd;
         }
     }
 
@@ -99,10 +82,10 @@ public class Shifter : MonoBehaviour
     {
         if (registered)
         {
-            TouchManager.OnTouchStart -= OnStartTouch;
-            TouchManager.OnTouchHold -= OnHoldTouch;
-            TouchManager.OnTouchMove -= OnMoveTouch;
-            TouchManager.OnTouchEnd -= OnEndTouch;
+            TouchManager.OnTouchStart -= OnTouchStart;
+            TouchManager.OnTouchHold -= OnTouchHold;
+            TouchManager.OnTouchMove -= OnTouchMove;
+            TouchManager.OnTouchEnd -= OnTouchEnd;
         }
     }
 
@@ -141,66 +124,28 @@ public class Shifter : MonoBehaviour
             shiftStyle = ShiftStyle.None;
     }
 
-    private void OnStartTouch(int fingerID, Vector2 startPosition)
+    private void OnTouchStart(TouchInfo touchInfo)
     {
-        if (TouchCount >= maxTouchCount)
+        if (TouchManager.TouchCount >= maxTouchCount)
             return;
-
-        if (TouchCount == 0)
-            SwipeStart = startPosition;
-
-        touchInfos.Add(new TouchInfo(fingerID, startPosition, startPosition));
-        UpdateShiftStyle(TouchCount);
+        this.touchInfo = touchInfo;
     }
 
-    private void OnHoldTouch(int fingerID, Vector2 position)
+    private void OnTouchHold(TouchInfo touchInfo) {}
+
+    private void OnTouchMove(TouchInfo touchInfo)
     {
-        if (TouchCount == 1)
-        {
-            SwipeStart = touchInfos[0].startPosition;
-        }
-    }
-
-    private void OnMoveTouch(int fingerID, Vector2 newPosition)
-    {
-        int index;
-        if (!GetTouchInfoIndex(fingerID, out index))
-            return; // Ignore touch if not recorded.
-
-        // Update touch's current position
-        TouchInfo touchInfo = touchInfos[index];
-        touchInfo.position = newPosition;
-        touchInfos[index] = touchInfo;
-
-        if (index != 0)
+        if (touchInfo != this.touchInfo)
             return;
-
-        Vector2 pSwipe = newPosition - touchInfo.startPosition;
-        State pState = CalculateState(pSwipe);
+        State pState = CalculateState(touchInfo.Position - touchInfo.StartPosition);
         ShowPotentialState(pState);
-        SwipeEnd = newPosition;
     }
 
-    private void OnEndTouch(int fingerID, Vector2 endPosition)
+    private void OnTouchEnd(TouchInfo touchInfo)
     {
-        int index;
-        if (!GetTouchInfoIndex(fingerID, out index))
-            return; // Ignore touch if not recorded.
-
-        touchInfos.RemoveAt(index);
-        UpdateShiftStyle(TouchCount);
-
-        if (TouchCount == 1)
-        {
-            timeSinceTouchEnd = 0f;
+        if (touchInfo != this.touchInfo)
             return;
-        }
-
-        // If we released a finger slighlty before, consider that it was a two finger swipe.
-        if (timeSinceTouchEnd < minTimeBetweenTouches)
-            shiftStyle = ShiftStyle.Grow;
-
-        Shift(SwipeEnd - SwipeStart);
+        Shift(touchInfo.Position - touchInfo.StartPosition);
         timeSinceTouchEnd = 0f;
     }
 
@@ -210,21 +155,6 @@ public class Shifter : MonoBehaviour
             return;
 
         timeSinceTouchEnd += Time.deltaTime;
-    }
-
-    private bool GetTouchInfoIndex(int fingerID, out int index)
-    {
-        for (int i = 0; i < TouchCount; ++i)
-        {
-            if (touchInfos[i].ID == fingerID)
-            {
-                index = i;
-                return true;
-            }
-        }
-
-        index = -1;
-        return false;
     }
 
     private State EmptyToDirection(Direction direction)
